@@ -67,3 +67,33 @@ def canonical(value):
     if isinstance(value, (date, datetime)):
         return value.isoformat()
     return value
+
+
+MISSING = object()
+
+
+def check_value(value, rule, *, csv=False, null_values=("",)):
+    if value is MISSING:
+        if rule.get("required", True):
+            raise ValueIssue("missing_field")
+        return None
+    if value is None or (csv and isinstance(value, str) and value in null_values):
+        if not rule.get("nullable", False):
+            raise ValueIssue("null")
+        return None
+    result = parse_value(value, rule["type"], csv=csv)
+    if "min" in rule and result < Decimal(str(rule["min"])):
+        raise ValueIssue("minimum")
+    if "max" in rule and result > Decimal(str(rule["max"])):
+        raise ValueIssue("maximum")
+    if "min_length" in rule and len(result) < rule["min_length"]:
+        raise ValueIssue("min_length")
+    if "max_length" in rule and len(result) > rule["max_length"]:
+        raise ValueIssue("max_length")
+    if "pattern" in rule and re.fullmatch(rule["pattern"], result) is None:
+        raise ValueIssue("pattern")
+    if "enum" in rule:
+        allowed = [parse_value(x, rule["type"]) for x in rule["enum"]]
+        if result not in allowed:
+            raise ValueIssue("enum")
+    return result

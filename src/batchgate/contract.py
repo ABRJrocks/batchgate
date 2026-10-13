@@ -6,6 +6,8 @@ import re
 from decimal import Decimal
 from pathlib import Path, PurePosixPath
 
+from .values import ValueIssue, parse_value
+
 
 class ContractError(ValueError):
     """An invalid contract or unsafe input path."""
@@ -143,6 +145,12 @@ def validate_contract(raw):
                     raise ContractError("invalid regular expression") from None
             if "enum" in rule and (not isinstance(rule["enum"], list) or not 1 <= len(rule["enum"]) <= 100):
                 raise ContractError("enum requires one to 100 values")
+        for rule in fields.values():
+            for value in rule.get("enum", []):
+                try:
+                    parse_value(value, rule["type"])
+                except ValueIssue:
+                    raise ContractError("enum values must match the field type") from None
         for keys in [ds.get("primary_key", [])] + ds.get("unique", []):
             if keys:
                 key_fields(keys, fields)
