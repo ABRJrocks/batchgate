@@ -62,3 +62,29 @@ Keep the source directory immutable from validation through import. Metadata che
 For a CRM import, declare customer IDs and required contact columns, then check references from child files. For ETL, check producer schema, volume, and referential integrity before loading. For commerce exports, reconcile compatible monetary totals with a reviewed tolerance. For a flat JSONL AI dataset, use scalar field rules and identifiers; nested schema validation is outside this release.
 
 A matching sum alone does not establish per-order settlement correctness. Add per-record constraints in your application or a dedicated grouped reconciliation system when that is the requirement.
+
+## Python and Airflow task integration
+
+The public API returns a structured result. Use its `passed` property to block your consuming task, not the presence of a report file or the number of stored issue samples.
+
+```python
+from pathlib import Path
+from batchgate import load_contract, validate_batch, write_reports
+
+contract_path = Path("contracts/commerce.json")
+data_dir = Path("incoming/current")
+contract = load_contract(contract_path)
+result = validate_batch(contract, data_dir)
+write_reports(
+    result,
+    json_path="reports/import.json",
+    html_path="reports/import.html",
+    protected_paths=[contract_path, *[data_dir / d["path"] for d in contract["datasets"]]],
+)
+if not result.passed:
+    raise RuntimeError("Batch rejected; inspect the redacted validation report")
+```
+
+Place this block in an Airflow Python task before the dependent import task, a Prefect task, or your existing Python ETL function. Exceptions must fail the task. `ContractError` and `ReportError` indicate invalid configuration/output; other local I/O and SQLite exceptions propagate to the orchestrator. `write_reports` writes each output atomically but does not commit all outputs as one transaction. Pass every source path and the contract in `protected_paths` to prevent output collisions.
+
+`validate_contract` accepts a Python dictionary. Decimal bounds and tolerances can be strings to preserve exact decimal values. For input decimal columns, CSV numeric text and JSONL numbers or numeric strings are accepted. Binary Python floats are deliberately rejected by the scalar parser. JSONL parsing uses `Decimal` for fractional JSON numbers.
