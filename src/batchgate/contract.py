@@ -71,7 +71,7 @@ def safe_relative(value):
     return value
 
 
-def validate_contract(raw):
+def _validate_contract(raw):
     obj(raw, {"version", "name", "datasets", "reconciliations", "limits"}, {"version", "datasets"})
     if type(raw["version"]) is not int or raw["version"] != 1:
         raise ContractError("unsupported contract version")
@@ -151,11 +151,18 @@ def validate_contract(raw):
                     parse_value(value, rule["type"])
                 except ValueIssue:
                     raise ContractError("enum values must match the field type") from None
-        for keys in [ds.get("primary_key", [])] + ds.get("unique", []):
-            if keys:
-                key_fields(keys, fields)
-                if any(fields[k].get("nullable", False) or not fields[k].get("required", True) for k in keys):
-                    raise ContractError("key fields must be required and nonnullable")
+        for array in ["unique", "foreign_keys", "comparisons"]:
+            if array in ds and (not isinstance(ds[array], list) or len(ds[array]) > 50):
+                raise ContractError("invalid rule list")
+        keys_list = ([ds["primary_key"]] if "primary_key" in ds else []) + ds.get("unique", [])
+        seen_keys = set()
+        for keys in keys_list:
+            key_fields(keys, fields)
+            if tuple(keys) in seen_keys:
+                raise ContractError("duplicate key definition")
+            seen_keys.add(tuple(keys))
+            if any(fields[k].get("nullable", False) or not fields[k].get("required", True) for k in keys):
+                raise ContractError("key fields must be required and nonnullable")
         for array in ["unique", "foreign_keys", "comparisons"]:
             if array in ds and (not isinstance(ds[array], list) or len(ds[array]) > 50):
                 raise ContractError("invalid rule list")
@@ -186,9 +193,13 @@ def validate_contract(raw):
     reconciliations = raw.get("reconciliations", [])
     if not isinstance(reconciliations, list) or len(reconciliations) > 50:
         raise ContractError("invalid reconciliation list")
+    check_names = set()
     for check in reconciliations:
         obj(check, {"name", "left", "right", "tolerance"}, {"name", "left", "right"})
         name(check["name"])
+        if check["name"] in check_names:
+            raise ContractError("duplicate reconciliation name")
+        check_names.add(check["name"])
         for side in ["left", "right"]:
             spec = obj(check[side], {"dataset", "field"}, {"dataset", "field"})
             if spec["dataset"] not in by_name or spec["field"] not in by_name[spec["dataset"]]["fields"]:
@@ -203,6 +214,15 @@ def validate_contract(raw):
             raise ContractError("invalid reconciliation tolerance") from None
     return {"version": 1, "name": title, "datasets": datasets,
             "reconciliations": reconciliations, "limits": limits}
+
+
+def validate_contract(raw):
+    try:
+        return _validate_contract(raw)
+    except (ValueError, TypeError, KeyError, OverflowError, RecursionError) as exc:
+        if isinstance(exc, ContractError):
+            raise
+        raise ContractError("invalid contract structure") from None
 
 
 def load_contract(path):
