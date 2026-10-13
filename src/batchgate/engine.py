@@ -42,3 +42,49 @@ def _scan(dataset, path, limits, on_row=None):
     except InputError as exc:
         result.add(exc.code, line=exc.line)
     return result
+
+
+def _keys(dataset):
+    return ([dataset['primary_key']] if dataset.get('primary_key') else []) + dataset.get('unique', [])
+
+
+def _index_callback(dataset, index):
+    def on_row(record, values, result, bad):
+        before = result.issue_count
+        for number, fields in enumerate(_keys(dataset)):
+            if all(values.get(f) is not None for f in fields):
+                if index.add_key(dataset['name'], number, [values[f] for f in fields], record.row) is not None:
+                    result.add('duplicate_key', row=record.row, line=record.line, field=fields[0])
+        index.add_row(dataset['name'], record.row, record.line, bad or result.issue_count > before)
+    return on_row
+
+
+def validate_batch(contract, data_dir):
+    """Validate a contract dictionary against a stable local data directory."""
+    from pathlib import Path
+    from .contract import ContractError, validate_contract
+    from .index import key_index
+    from .readers import resolve_input
+    from .result import BatchResult
+
+    config = validate_contract(contract)
+    root = Path(data_dir).resolve()
+    if not root.is_dir():
+        raise ContractError('data directory must exist')
+    paths = {}
+    for dataset in config['datasets']:
+        try:
+            paths[dataset['name']] = resolve_input(root, dataset['path'])
+        except InputError:
+            paths[dataset['name']] = None
+    results = []
+    with key_index() as index:
+        for dataset in config['datasets']:
+            if paths[dataset['name']] is None:
+                result = DatasetResult(dataset['name'], sample_limit=config['limits']['max_issues'])
+                result.add('unreadable_file')
+            else:
+                result = _scan(dataset, paths[dataset['name']], config['limits'], _index_callback(dataset, index))
+            results.append(result)
+            index.db.commit()
+    return BatchResult(config['name'], results)
