@@ -78,3 +78,28 @@ def read_csv(path, dataset, limits):
         raise InputError("unreadable_file") from None
     except csv.Error:
         raise InputError("csv_syntax", reader.line_num) from None
+
+
+def read_jsonl(path, dataset, limits):
+    from .contract import strict_json
+    try:
+        if path.stat().st_size > limits["max_bytes"]:
+            raise InputError("byte_limit")
+        with path.open("r", encoding="utf-8", newline="") as stream:
+            for row, text in enumerate(bounded_lines(stream, limits), 1):
+                if row > limits["max_rows"]:
+                    raise InputError("row_limit", row)
+                try:
+                    data = strict_json(text)
+                    if not isinstance(data, dict):
+                        raise ValueError()
+                    yield Record(row, row, data)
+                except (ValueError, RecursionError):
+                    yield Record(row, row, None, "json_syntax")
+    except (OSError, UnicodeError):
+        raise InputError("unreadable_file") from None
+
+
+def read_records(path, dataset, limits):
+    reader = read_csv if dataset["format"] == "csv" else read_jsonl
+    yield from reader(path, dataset, limits)
