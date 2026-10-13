@@ -56,3 +56,36 @@ jobs:
           path: |
             dist/
             reports/
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - name: Accept good batch through the composite action
+        uses: ./
+        with:
+          contract: examples/commerce.contract.json
+          data-directory: examples/good
+          report-prefix: reports/action-good
+      - name: Reject broken batch through the composite action
+        id: broken
+        continue-on-error: true
+        uses: ./
+        with:
+          contract: examples/commerce.contract.json
+          data-directory: examples/bad
+          report-prefix: reports/action-bad
+      - name: Verify rejection came from dataset checks
+        env:
+          ACTION_OUTCOME: ${{ steps.broken.outcome }}
+        run: |
+          python - <<'PY'
+          import json, os
+          assert os.environ['ACTION_OUTCOME'] == 'failure'
+          report = json.load(open('reports/action-bad.json'))
+          assert report['passed'] is False
+          assert sum(d['invalid_rows'] for d in report['datasets']) == 5
+          PY

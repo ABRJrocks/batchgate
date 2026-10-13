@@ -1,0 +1,30 @@
+name: BatchGate
+description: Validate local CSV and JSONL batches before imports or ETL jobs.
+inputs:
+  contract:
+    description: Contract JSON path relative to the caller workspace.
+    required: true
+  data-directory:
+    description: Directory containing the declared dataset files.
+    required: true
+  report-prefix:
+    description: Output prefix for JSON, JUnit XML and offline HTML reports.
+    default: reports/batchgate
+runs:
+  using: composite
+  steps:
+    - name: Install BatchGate
+      shell: bash
+      run: python -m pip install --no-deps "$GITHUB_ACTION_PATH"
+    - name: Validate the batch
+      shell: bash
+      env:
+        BATCHGATE_CONTRACT: ${{ inputs.contract }}
+        BATCHGATE_DATA_DIRECTORY: ${{ inputs.data-directory }}
+        BATCHGATE_REPORT_PREFIX: ${{ inputs.report-prefix }}
+      run: |
+        python -m batchgate check "$BATCHGATE_CONTRACT" \
+          --data-dir "$BATCHGATE_DATA_DIRECTORY" \
+          --json-report "${BATCHGATE_REPORT_PREFIX}.json" \
+          --junit "${BATCHGATE_REPORT_PREFIX}.xml" \
+          --html-report "${BATCHGATE_REPORT_PREFIX}.html"
