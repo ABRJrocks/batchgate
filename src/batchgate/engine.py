@@ -80,16 +80,19 @@ def validate_batch(contract, data_dir):
     from .index import key_index
     from .readers import resolve_input
     from .result import BatchResult
+    from .snapshot import FileSnapshot
 
     config = validate_contract(contract)
     root = Path(data_dir).resolve()
     if not root.is_dir():
         raise ContractError('data directory must exist')
     paths = {}
+    snapshots = {}
     for dataset in config['datasets']:
         try:
             paths[dataset['name']] = resolve_input(root, dataset['path'])
-        except InputError:
+            snapshots[dataset['name']] = FileSnapshot.capture(paths[dataset['name']])
+        except (InputError, OSError):
             paths[dataset['name']] = None
     results = []
     totals = {d['name']: {} for d in config['datasets']}
@@ -107,6 +110,11 @@ def validate_batch(contract, data_dir):
             results.append(result)
             index.db.commit()
         by_name = {r.name: r for r in results}
+        for dataset in config['datasets']:
+            snapshot = snapshots.get(dataset['name'])
+            if snapshot is not None and not snapshot.unchanged(root, dataset['path']):
+                by_name[dataset['name']].complete = False
+                by_name[dataset['name']].add('file_changed')
         definitions = {d['name']: d for d in config['datasets']}
         for dataset in config['datasets']:
             result = by_name[dataset['name']]
