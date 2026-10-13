@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "name": "Commerce import",
+  "datasets": [
+    {
+      "name": "customers", "path": "customers.csv", "format": "csv",
+      "fields": {
+        "customer_id": {"type": "string", "pattern": "C[0-9]{3}"},
+        "name": {"type": "string", "min_length": 2, "max_length": 100},
+        "plan": {"type": "string", "enum": ["starter", "business"]}
+      },
+      "primary_key": ["customer_id"], "row_count": {"min": 1}
+    },
+    {
+      "name": "orders", "path": "orders.csv", "format": "csv",
+      "fields": {
+        "order_id": {"type": "string", "pattern": "O[0-9]{3}"},
+        "customer_id": {"type": "string"},
+        "amount": {"type": "decimal", "min": "0.01", "max": "1000000"},
+        "ordered_on": {"type": "date"},
+        "shipped_on": {"type": "date", "nullable": true}
+      },
+      "primary_key": ["order_id"], "row_count": {"min": 1},
+      "foreign_keys": [{"fields": ["customer_id"], "dataset": "customers", "references": ["customer_id"]}],
+      "comparisons": [{"left": "ordered_on", "op": "le", "right": "shipped_on"}]
+    },
+    {
+      "name": "payments", "path": "payments.jsonl", "format": "jsonl",
+      "fields": {
+        "payment_id": {"type": "string", "pattern": "P[0-9]{3}"},
+        "order_id": {"type": "string"},
+        "amount": {"type": "decimal", "min": "0.01"},
+        "status": {"type": "string", "enum": ["settled"]},
+        "settled_at": {"type": "datetime"}
+      },
+      "primary_key": ["payment_id"], "row_count": {"min": 1},
+      "foreign_keys": [{"fields": ["order_id"], "dataset": "orders", "references": ["order_id"]}]
+    }
+  ],
+  "reconciliations": [{
+    "name": "order_payment_totals",
+    "left": {"dataset": "orders", "field": "amount"},
+    "right": {"dataset": "payments", "field": "amount"}, "tolerance": "0"
+  }]
+}

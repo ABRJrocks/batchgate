@@ -1,0 +1,3 @@
+order_id,customer_id,amount,ordered_on,shipped_on
+O100,C001,10.10,2026-10-01,2026-10-02
+O101,C002,20.20,2026-10-02,

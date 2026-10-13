@@ -1,0 +1,2 @@
+{"payment_id":"P900","order_id":"O404","amount":29.99,"status":"settled","settled_at":"2026-10-01T10:00:00Z"}
+{"payment_id":"P900","order_id":"O100","amount":0.01,"status":"pending","settled_at":"2026-10-02T10:00:00"}
