@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "batchgate"
+version = "0.1.0"
+description = "Local CSV and JSONL quality gates for import and ETL workflows"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "Abdul Rafay"}]
+dependencies = []
+classifiers = ["Programming Language :: Python :: 3", "Topic :: Software Development :: Testing"]
+
+[project.urls]
+Repository = "https://github.com/ABRJrocks/batchgate"
+Issues = "https://github.com/ABRJrocks/batchgate/issues"
+
+[project.scripts]
+batchgate = "batchgate.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
