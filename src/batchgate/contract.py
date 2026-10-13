@@ -76,7 +76,7 @@ def _validate_contract(raw):
     if type(raw["version"]) is not int or raw["version"] != 1:
         raise ContractError("unsupported contract version")
     title = raw.get("name", "batch")
-    if not isinstance(title, str) or not 1 <= len(title) <= 100 or any(ord(c) < 32 for c in title):
+    if not isinstance(title, str) or not 1 <= len(title) <= 100 or any(not (0x20 <= ord(c) <= 0xD7FF or 0xE000 <= ord(c) <= 0xFFFD or 0x10000 <= ord(c) <= 0x10FFFF) for c in title):
         raise ContractError("invalid contract name")
     datasets = raw["datasets"]
     if not isinstance(datasets, list) or not 1 <= len(datasets) <= 100:

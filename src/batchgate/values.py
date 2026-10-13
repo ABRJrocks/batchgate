@@ -15,7 +15,7 @@ class ValueIssue(ValueError):
 def parse_value(value, kind, *, csv=False):
     try:
         if kind == "string":
-            if not isinstance(value, str):
+            if not isinstance(value, str) or any(0xD800 <= ord(c) <= 0xDFFF for c in value):
                 raise ValueError()
             return value
         if kind == "boolean":
