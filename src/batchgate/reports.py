@@ -57,8 +57,9 @@ def check_destinations(destinations, protected_paths=()):
         raise ReportError('report paths must be distinct and must not overwrite inputs or the contract')
 
 
-def write_reports(result, *, json_path=None, junit_path=None, protected_paths=()):
-    check_destinations([json_path, junit_path], protected_paths)
-    for path, render in [(json_path, json_report), (junit_path, junit_report)]:
+def write_reports(result, *, json_path=None, junit_path=None, html_path=None, protected_paths=()):
+    from .html_report import html_report
+    check_destinations([json_path, junit_path, html_path], protected_paths)
+    for path, render in [(json_path, json_report), (junit_path, junit_report), (html_path, html_report)]:
         if path is not None:
             atomic_write(path, render(result))
