@@ -18,9 +18,35 @@ PASS order_payment_totals: sum_match
 ACCEPTED batch
 ```
 
+## Use in GitHub Actions
+
+Run this gate before the step that imports your files. Check out your repository and set up Python 3.10+ first:
+
+```yaml
+- uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+- uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  with:
+    python-version: '3.12'
+- uses: ABRJrocks/batchgate@v0.1.1
+  with:
+    contract: contracts/commerce.json
+    data-directory: incoming/current
+    report-prefix: reports/import
+```
+
+| Input | Required | Purpose |
+| --- | --- | --- |
+| `contract` | Yes | JSON contract path relative to the workflow workspace |
+| `data-directory` | Yes | Directory holding the files declared in the contract |
+| `report-prefix` | No | Report path prefix, defaults to `reports/batchgate` |
+
+A rejected batch fails the step and blocks subsequent import steps. A normal validation failure still writes `.json`, `.xml` and `.html` reports. Configuration or I/O failures may produce no report. Use `if: always()` on a separate artifact upload step to preserve reports. The Action uploads nothing itself and needs no service token.
+
+Pin a reviewed commit SHA for reproducible workflows. The Action installs BatchGate into the selected Python environment; installation can contact your configured package index for build tooling. See the [complete workflow and integration recipes](docs/integrations.md) for artifact uploads and operational limits.
+
 ## Try a real batch gate
 
-Requires Python 3.10+. There is no PyPI release yet. Install from the repository or use the wheel attached to the [first release](https://github.com/ABRJrocks/batchgate/releases/tag/v0.1.0).
+Requires Python 3.10+. There is no PyPI release yet. Install from the repository or use a wheel attached to the [releases](https://github.com/ABRJrocks/batchgate/releases).
 
 ```sh
 git clone https://github.com/ABRJrocks/batchgate.git
@@ -126,6 +152,6 @@ python -m pip install -e .
 python -m unittest discover -s tests -v
 ```
 
-**Status: 0.1.0 prerelease.** Validate the contract against your own data and consumer before adoption. Equal column totals do not establish per-record correctness. File metadata checks do not create a transaction with your importer. The runner has no built-in hard execution deadline or disk quota; your orchestrator controls those limits.
+**Status: 0.1.1 prerelease.** Validate the contract against your own data and consumer before adoption. Equal column totals do not establish per-record correctness. File metadata checks do not create a transaction with your importer. The runner has no built-in hard execution deadline or disk quota; your orchestrator controls those limits.
 
 MIT licensed. Built and maintained by [Abdul Rafay](https://www.rafayai.dev).

@@ -54,5 +54,5 @@ def html_report(result):
         body.append(f'</tbody></table></div><p class="muted">{ds.issue_count - len(ds.issues):,} additional issues omitted from samples. Counts include every detected issue.</p></details>')
     if not issues:
         body.append('<p>No dataset issues were detected.</p>')
-    body.append('</section><footer>BatchGate 0.1.0. A passing report covers the declared rules and the scanned files. Keep the batch immutable through the consuming step. This report contains contract metadata and row locations; review before sharing.</footer></main></body></html>\n')
+    body.append('</section><footer>BatchGate 0.1.1. A passing report covers the declared rules and the scanned files. Keep the batch immutable through the consuming step. This report contains contract metadata and row locations; review before sharing.</footer></main></body></html>\n')
     return ''.join(body)

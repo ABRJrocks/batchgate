@@ -1,5 +1,9 @@
 name: BatchGate
-description: Validate local CSV and JSONL batches before imports or ETL jobs.
+author: Abdul Rafay
+description: Gate CSV and JSONL imports with schema rules, duplicate checks, cross-file references and decimal reconciliation.
+branding:
+  icon: check-circle
+  color: gray-dark
 inputs:
   contract:
     description: Contract JSON path relative to the caller workspace.

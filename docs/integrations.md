@@ -2,7 +2,7 @@
 
 ## GitHub Actions
 
-Place the validation gate immediately before the import step. This composite action requires Python 3.10+ on PATH. Pin a reviewed commit SHA for reproducible use; `v0.1.0` below is a convenient first-release example.
+Place the validation gate immediately before the import step. This composite action requires Python 3.10+ on PATH. Pin a reviewed commit SHA for reproducible use; `v0.1.1` below is a convenient release example.
 
 ```yaml
 name: Import data
@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: '3.12'
-      - uses: ABRJrocks/batchgate@v0.1.0
+      - uses: ABRJrocks/batchgate@v0.1.1
         with:
           contract: contracts/commerce.json
           data-directory: incoming/current

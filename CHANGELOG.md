@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.1
+
+- Add Marketplace author metadata and a charcoal check-circle badge.
+- Document Action setup, inputs, report artifacts and failure behavior in the README.
+- Preserve the version 1 contract and validation behavior from 0.1.0.
+
+This remains an early prerelease with the operational boundaries described below.
+
 ## 0.1.0
 
 Initial prerelease:

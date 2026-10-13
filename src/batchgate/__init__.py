@@ -1,6 +1,6 @@
 """Local file-batch validation."""
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 from .contract import ContractError, load_contract, validate_contract
 from .engine import validate_batch
