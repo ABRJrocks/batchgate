@@ -42,8 +42,11 @@ class BatchTests(unittest.TestCase):
         self.assertFalse(result.datasets[0].complete)
 
     def test_input_is_not_changed(self):
-        self.run_batch('id\n1\n')
-        self.assertEqual((self.root / 'users.csv').read_bytes(), b'id\n1\n')
+        path = self.root / 'users.csv'
+        original = b'id\r\n1\r\n'
+        path.write_bytes(original)
+        validate_batch(self.config, self.root)
+        self.assertEqual(path.read_bytes(), original)
 
     def test_unsafe_path_is_configuration_failure(self):
         self.config['datasets'][0]['path'] = '../secret'
