@@ -55,6 +55,10 @@ def _index_callback(dataset, index):
             if all(values.get(f) is not None for f in fields):
                 if index.add_key(dataset['name'], number, [values[f] for f in fields], record.row) is not None:
                     result.add('duplicate_key', row=record.row, line=record.line, field=fields[0])
+        for number, check in enumerate(dataset.get('foreign_keys', [])):
+            fields = check['fields']
+            if all(values.get(f) is not None for f in fields):
+                index.add_reference(dataset['name'], number, [values[f] for f in fields], record.row, record.line)
         index.add_row(dataset['name'], record.row, record.line, bad or result.issue_count > before)
     return on_row
 
@@ -87,4 +91,17 @@ def validate_batch(contract, data_dir):
                 result = _scan(dataset, paths[dataset['name']], config['limits'], _index_callback(dataset, index))
             results.append(result)
             index.db.commit()
+        by_name = {r.name: r for r in results}
+        definitions = {d['name']: d for d in config['datasets']}
+        for dataset in config['datasets']:
+            result = by_name[dataset['name']]
+            for number, check in enumerate(dataset.get('foreign_keys', [])):
+                if not by_name[check['dataset']].complete:
+                    result.add('reference_unavailable')
+                    continue
+                target_rule = _keys(definitions[check['dataset']]).index(check['references'])
+                for row, line in index.missing_references(dataset['name'], number, check['dataset'], target_rule):
+                    result.add('foreign_key', row=row, line=line, field=check['fields'][0])
+                    index.mark_bad(dataset['name'], row)
+            result.invalid_rows = index.invalid_rows(dataset['name'])
     return BatchResult(config['name'], results)
